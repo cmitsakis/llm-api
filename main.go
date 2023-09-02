@@ -164,6 +164,8 @@ type PredictConfig struct {
 	SystemPrompt         string
 	SystemPromptFilePath string
 	NKeep                int
+	RopeFreqBase         float64
+	RopeFreqScale        float64
 	TopK                 int
 	TopP                 float64
 	Temperature          float64
@@ -190,6 +192,8 @@ func main2() error {
 	flag.IntVar(&config.Model.GpuLayers, "gpu-layers", 0, "number of GPU layers")
 	flag.StringVar(&config.ModelConfigFilePath, "model-config-file", "", "path to config file for the model")
 	flag.IntVar(&config.Predict.NKeep, "n-keep", 0, "number of tokens to keep from initial prompt (0 = disabled)")
+	flag.Float64Var(&config.Predict.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
+	flag.Float64Var(&config.Predict.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
 	flag.Float64Var(&config.Predict.FrequencyPenalty, "penalty-frequency", 0.1, "frequency penalty (0 = disabled)")
 	flag.Float64Var(&config.Predict.PresencePenalty, "penalty-presence", 0, "presense penalty (0 = disabled)")
 	flag.Float64Var(&config.Predict.RepetitionPenalty, "penalty-repetition", 1.1, "repetition penalty (1 = disabled)")
@@ -314,6 +318,8 @@ func main2() error {
 			llama.SetTokens(config.Predict.Tokens),
 			llama.SetThreads(config.Predict.Threads),
 			llama.SetNKeep(config.Predict.NKeep),
+			llama.SetRopeFreqBase(float32(config.Predict.RopeFreqBase)),
+			llama.SetRopeFreqScale(float32(config.Predict.RopeFreqScale)),
 			llama.SetTopK(config.Predict.TopK),
 			llama.SetTopP(float32(config.Predict.TopP)),
 			llama.SetTemperature(float32(config.Predict.Temperature)),
@@ -323,8 +329,6 @@ func main2() error {
 			llama.SetMirostat(config.Predict.Mirostat),
 			llama.SetMirostatTAU(float32(config.Predict.MirostatTau)),
 			llama.SetMirostatETA(float32(config.Predict.MirostatEta)),
-			llama.SetRopeFreqBase(10000),
-			llama.SetRopeFreqScale(1),
 			llama.SetPenalizeNL(false),
 		},
 	)

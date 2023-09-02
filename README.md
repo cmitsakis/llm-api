@@ -111,6 +111,10 @@ By default the HTTP server listens on `localhost:8080`. You can change this with
         path to prompt template file. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint
   -prompt-template-type string
         prompt template type. valid values: llama-2, vicuna_v1.1. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint
+  -rope-freq-base float
+        RoPE base frequency (default 10000)
+  -rope-freq-scale float
+        RoPE frequency scaling factor (default 1)
   -system-prompt string
         system prompt
   -system-prompt-file string
