@@ -90,11 +90,12 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		systemPrompt := h.SystemPrompt
 		systemPromptGiven := r.Form.Get("system") 
 		if systemPromptGiven != "" {
-			h.SystemPrompt = systemPromptGiven
+			systemPrompt = systemPromptGiven
 		}
-		conv := conversation.NewConversation(h.SystemPrompt)
+		conv := conversation.NewConversation(systemPrompt)
 		messages := r.Form["messages"]
 		for i, message := range messages {
 			if i % 2 == 0 {
