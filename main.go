@@ -112,7 +112,10 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		replyPrefix := r.Form.Get("replyPrefix")
 		if replyPrefix != "" {
-			prompt += " " + replyPrefix
+			if !strings.HasSuffix(prompt, "\n") {
+				prompt += " "
+			}
+			prompt += replyPrefix
 		}
 		log.Printf("<prompt>%s</prompt>\n", prompt)
 		var tokensAccumulated string
