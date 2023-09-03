@@ -111,7 +111,9 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		replyPrefix := r.Form.Get("replyPrefix")
-		prompt += " " + replyPrefix
+		if replyPrefix != "" {
+			prompt += " " + replyPrefix
+		}
 		log.Printf("<prompt>%s</prompt>\n", prompt)
 		var tokensAccumulated string
 		opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
