@@ -213,7 +213,7 @@ func main2() error {
 	flag.IntVar(&config.Predict.Tokens, "tokens", 0, "number of tokens to predict (0 = no limit)")
 	flag.IntVar(&config.Predict.TopK, "top-k", 40, "top-k")
 	flag.Float64Var(&config.Predict.TopP, "top-p", 0.2, "top-p (1 = disabled)")
-	flag.IntVar(&config.Predict.Mirostat, "mirostat", 40, "mirostat (0 = disabled, 1 = mirostat, 2 = mirostat 2.0)")
+	flag.IntVar(&config.Predict.Mirostat, "mirostat", 0, "mirostat (0 = disabled, 1 = mirostat, 2 = mirostat 2.0)")
 	flag.Float64Var(&config.Predict.MirostatTau, "mirostat-tau", 5, "mirostat target entropy")
 	flag.Float64Var(&config.Predict.MirostatEta, "mirostat-eta", 0.1, "mirostat learning rate")
 	flag.BoolVar(&config.License, "license", false, "show license")

@@ -90,7 +90,7 @@ By default the HTTP server listens on `localhost:8080`. You can change this with
   -gpu-layers int
         number of GPU layers
   -mirostat int
-        mirostat (0 = disabled, 1 = mirostat, 2 = mirostat 2.0) (default 40)
+        mirostat (0 = disabled, 1 = mirostat, 2 = mirostat 2.0)
   -mirostat-eta float
         mirostat learning rate (default 0.1)
   -mirostat-tau float
