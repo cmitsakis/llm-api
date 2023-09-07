@@ -2,10 +2,9 @@
 
 *llm-api* offers a simple HTTP API that enables applications to perform inference with *LLMs*.
 
-Under development. Not recommended for production use.
+*llm-api* depends on *llama.cpp*, so it supports only models in *GGUF* format.
 
-*llm-api* depends on the last version of *go-llama.cpp* that supports *GGML* models.
-Soon *llm-api* will use a newer version of *go-llama.cpp* that only supports *GGUF* models.
+Under development. Not recommended for production use.
 
 ### HTTP API
 
@@ -58,7 +57,7 @@ No information about the error is sent to the client.
 
 ## Usage
 
-Download a *GGML* model (e.g. from [TheBloke](https://huggingface.co/TheBloke)), and run one the following commands:
+Download a model in *GGUF* format (e.g. from [TheBloke](https://huggingface.co/TheBloke)), and run one the following commands:
 
 For the *Llama 2* model:
 ```sh
