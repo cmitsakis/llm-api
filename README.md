@@ -6,7 +6,7 @@
 
 Under development. Not recommended for production use.
 
-### HTTP API
+## HTTP API
 
 Requests are in `x-www-form-urlencoded`, responses in plain text.
 
