@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"text/template"
 	"time"
 
@@ -20,6 +21,8 @@ import (
 	"cmitsakis/llm-api/internal/llm/conversation"
 	"cmitsakis/llm-api/internal/llm/predictor"
 )
+
+var predictMutex sync.Mutex
 
 type PredictHandler struct {
 	Predictor predictor.Predictor
@@ -57,6 +60,16 @@ func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			opts = append(opts, llama.SetTemperature(float32(temperature)))
 			log.Printf("<temperature>%v</temperature>\n", temperature)
 		}
+		locked := predictMutex.TryLock()
+		if !locked {
+			// another request is performing prediction
+			// reject this request with HTTP 503
+			log.Printf("sending HTTP error: %v. Server is busy", http.StatusText(http.StatusServiceUnavailable))
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "server is busy")
+			return
+		}
+		defer predictMutex.Unlock()
 		_, err = h.Predictor.Predict(prompt, opts...)
 		if err != nil {
 			log.Printf("predictor.Predict() failed: %s\n", err)
@@ -138,6 +151,16 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			opts = append(opts, llama.SetTemperature(float32(temperature)))
 			log.Printf("<temperature>%v</temperature>\n", temperature)
 		}
+		locked := predictMutex.TryLock()
+		if !locked {
+			// another request is performing prediction
+			// reject this request with HTTP 503
+			log.Printf("sending HTTP error: %v. Server is busy", http.StatusText(http.StatusServiceUnavailable))
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, "server is busy")
+			return
+		}
+		defer predictMutex.Unlock()
 		_, err = h.Predictor.Predict(prompt, opts...)
 		if err != nil {
 			log.Printf("predictor.Predict() failed: %s\n", err)
