@@ -185,6 +185,8 @@ type ModelConfig struct {
 	PromptTemplate         string `json:"promptTemplate"`
 	PromptTemplateType     string `json:"promptTemplateType"`
 	PromptTemplateFilePath string `json:"promptTemplateFile"`
+	RopeFreqBase           float64 `json:"ropeFreqBase"`
+	RopeFreqScale          float64 `json:"ropeFreqScale"`
 }
 
 type PredictConfig struct {
@@ -193,8 +195,6 @@ type PredictConfig struct {
 	SystemPrompt         string
 	SystemPromptFilePath string
 	NKeep                int
-	RopeFreqBase         float64
-	RopeFreqScale        float64
 	TopK                 int
 	TopP                 float64
 	Temperature          float64
@@ -226,12 +226,12 @@ func main2() error {
 	flag.StringVar(&config.Model.PromptTemplate, "prompt-template", "", "prompt template. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateFilePath, "prompt-template-file", "", "path to prompt template file. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateType, "prompt-template-type", "", "prompt template type. valid values: llama-2, vicuna_v1.1. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
+	flag.Float64Var(&config.Model.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
+	flag.Float64Var(&config.Model.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
 	flag.StringVar(&config.ModelConfigFilePath, "model-config-file", "", "path to config file for the model")
 
 	// Predict options
 	flag.IntVar(&config.Predict.NKeep, "n-keep", 0, "number of tokens to keep from initial prompt (0 = disabled)")
-	flag.Float64Var(&config.Predict.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
-	flag.Float64Var(&config.Predict.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
 	flag.StringVar(&config.Predict.SystemPrompt, "system-prompt", "", "system prompt")
 	flag.StringVar(&config.Predict.SystemPromptFilePath, "system-prompt-file", "", "read the system prompt from this file")
 	flag.IntVar(&config.Predict.Threads, "threads", runtime.NumCPU(), "number of threads")
@@ -353,13 +353,13 @@ func main2() error {
 		[]llama.ModelOption{
 			llama.SetContext(config.Model.ContextSize),
 			llama.SetGPULayers(config.Model.GpuLayers),
+			llama.WithRopeFreqBase(float32(config.Model.RopeFreqBase)),
+			llama.WithRopeFreqScale(float32(config.Model.RopeFreqScale)),
 		},
 		[]llama.PredictOption{
 			llama.SetTokens(config.Predict.Tokens),
 			llama.SetThreads(config.Predict.Threads),
 			llama.SetNKeep(config.Predict.NKeep),
-			llama.SetRopeFreqBase(float32(config.Predict.RopeFreqBase)),
-			llama.SetRopeFreqScale(float32(config.Predict.RopeFreqScale)),
 			llama.SetTopK(config.Predict.TopK),
 			llama.SetTopP(float32(config.Predict.TopP)),
 			llama.SetTemperature(float32(config.Predict.Temperature)),
