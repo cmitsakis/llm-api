@@ -216,30 +216,41 @@ type Config struct {
 
 func main2() error {
 	var config Config
+
+	// HTTP server options
 	flag.StringVar(&config.Addr, "addr", "localhost:8080", `TCP network address the server listens on, in the form "host:port" or ":port" (e.g. "localhost:8080" or "127.0.0.1:8080" or ":8080")`)
+
+	// Model options
 	flag.IntVar(&config.Model.ContextSize, "context", 512, "context size")
 	flag.IntVar(&config.Model.GpuLayers, "gpu-layers", 0, "number of GPU layers")
-	flag.StringVar(&config.ModelConfigFilePath, "model-config-file", "", "path to config file for the model")
-	flag.IntVar(&config.Predict.NKeep, "n-keep", 0, "number of tokens to keep from initial prompt (0 = disabled)")
-	flag.Float64Var(&config.Predict.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
-	flag.Float64Var(&config.Predict.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
-	flag.Float64Var(&config.Predict.FrequencyPenalty, "penalty-frequency", 0.1, "frequency penalty (0 = disabled)")
-	flag.Float64Var(&config.Predict.PresencePenalty, "penalty-presence", 0, "presense penalty (0 = disabled)")
-	flag.Float64Var(&config.Predict.RepetitionPenalty, "penalty-repetition", 1.1, "repetition penalty (1 = disabled)")
 	flag.StringVar(&config.Model.PromptTemplate, "prompt-template", "", "prompt template. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateFilePath, "prompt-template-file", "", "path to prompt template file. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateType, "prompt-template-type", "", "prompt template type. valid values: llama-2, vicuna_v1.1. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
+	flag.StringVar(&config.ModelConfigFilePath, "model-config-file", "", "path to config file for the model")
+
+	// Predict options
+	flag.IntVar(&config.Predict.NKeep, "n-keep", 0, "number of tokens to keep from initial prompt (0 = disabled)")
+	flag.Float64Var(&config.Predict.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
+	flag.Float64Var(&config.Predict.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
 	flag.StringVar(&config.Predict.SystemPrompt, "system-prompt", "", "system prompt")
 	flag.StringVar(&config.Predict.SystemPromptFilePath, "system-prompt-file", "", "read the system prompt from this file")
-	flag.Float64Var(&config.Predict.Temperature, "temperature", 0.8, "temperature")
 	flag.IntVar(&config.Predict.Threads, "threads", runtime.NumCPU(), "number of threads")
 	flag.IntVar(&config.Predict.Tokens, "tokens", 0, "number of tokens to predict (0 = no limit)")
+
+	// Sampling options
 	flag.IntVar(&config.Predict.TopK, "top-k", 40, "top-k")
 	flag.Float64Var(&config.Predict.TopP, "top-p", 0.2, "top-p (1 = disabled)")
+	flag.Float64Var(&config.Predict.Temperature, "temperature", 0.8, "temperature")
+	flag.Float64Var(&config.Predict.FrequencyPenalty, "penalty-frequency", 0.1, "frequency penalty (0 = disabled)")
+	flag.Float64Var(&config.Predict.PresencePenalty, "penalty-presence", 0, "presense penalty (0 = disabled)")
+	flag.Float64Var(&config.Predict.RepetitionPenalty, "penalty-repetition", 1.1, "repetition penalty (1 = disabled)")
 	flag.IntVar(&config.Predict.Mirostat, "mirostat", 0, "mirostat (0 = disabled, 1 = mirostat, 2 = mirostat 2.0)")
 	flag.Float64Var(&config.Predict.MirostatTau, "mirostat-tau", 5, "mirostat target entropy")
 	flag.Float64Var(&config.Predict.MirostatEta, "mirostat-eta", 0.1, "mirostat learning rate")
+
+	// other options
 	flag.BoolVar(&config.License, "license", false, "show license")
+
 	flag.Parse()
 
 	if config.License {
