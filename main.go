@@ -226,8 +226,8 @@ func main2() error {
 	flag.StringVar(&config.Model.PromptTemplate, "prompt-template", "", "prompt template. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateFilePath, "prompt-template-file", "", "path to prompt template file. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
 	flag.StringVar(&config.Model.PromptTemplateType, "prompt-template-type", "", "prompt template type. valid values: llama-2, vicuna_v1.1. Setting the prompt template with this or the other prompt template flags is required if you want to use the /chat API endpoint")
-	flag.Float64Var(&config.Model.RopeFreqBase, "rope-freq-base", 10000, "RoPE base frequency")
-	flag.Float64Var(&config.Model.RopeFreqScale, "rope-freq-scale", 1, "RoPE frequency scaling factor")
+	flag.Float64Var(&config.Model.RopeFreqBase, "rope-freq-base", 0, "RoPE base frequency (default 10000 unless specified in the GGUF file)")
+	flag.Float64Var(&config.Model.RopeFreqScale, "rope-freq-scale", 0, "RoPE frequency scaling factor (default 1 unless specified in the GGUF file)")
 	flag.StringVar(&config.ModelConfigFilePath, "model-config-file", "", "path to config file for the model")
 
 	// Predict options
@@ -348,14 +348,19 @@ func main2() error {
 	}
 
 	modelFilePath := args[0]
+	modelOptions := []llama.ModelOption{
+		llama.SetContext(config.Model.ContextSize),
+		llama.SetGPULayers(config.Model.GpuLayers),
+	}
+	if config.Model.RopeFreqBase != 0 {
+		modelOptions = append(modelOptions, llama.WithRopeFreqBase(float32(config.Model.RopeFreqBase)))
+	}
+	if config.Model.RopeFreqScale != 0 {
+		modelOptions = append(modelOptions, llama.WithRopeFreqScale(float32(config.Model.RopeFreqScale)))
+	}
 	predictor, err := predictor.New(
 		modelFilePath,
-		[]llama.ModelOption{
-			llama.SetContext(config.Model.ContextSize),
-			llama.SetGPULayers(config.Model.GpuLayers),
-			llama.WithRopeFreqBase(float32(config.Model.RopeFreqBase)),
-			llama.WithRopeFreqScale(float32(config.Model.RopeFreqScale)),
-		},
+		modelOptions,
 		[]llama.PredictOption{
 			llama.SetTokens(config.Predict.Tokens),
 			llama.SetThreads(config.Predict.Threads),
