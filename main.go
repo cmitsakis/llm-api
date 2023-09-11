@@ -24,6 +24,49 @@ import (
 
 var predictMutex sync.Mutex
 
+func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predictor, prompt string) {
+	log.Printf("<prompt>%s</prompt>\n", prompt)
+	var tokensAccumulated string
+	opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
+		tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
+		_, err := io.WriteString(w, token)
+		if err != nil {
+			return false
+		}
+		return true
+	})}
+	temperatureStr := r.Form.Get("temperature")
+	if temperatureStr != "" {
+		temperature, err := strconv.ParseFloat(temperatureStr, 32)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "failed to parse value 'temperature' %s: %s", temperatureStr, err)
+			return
+		}
+		opts = append(opts, llama.SetTemperature(float32(temperature)))
+		log.Printf("<temperature>%v</temperature>\n", temperature)
+	}
+	locked := predictMutex.TryLock()
+	if !locked {
+		// another request is performing prediction
+		// reject this request with HTTP 503
+		log.Printf("sending HTTP error: %v. Server is busy", http.StatusText(http.StatusServiceUnavailable))
+		w.WriteHeader(http.StatusServiceUnavailable)
+		fmt.Fprintf(w, "server is busy")
+		return
+	}
+	defer predictMutex.Unlock()
+	_, err := p.Predict(prompt, opts...)
+	if err != nil {
+		log.Printf("p.Predict() failed: %s\n", err)
+		// panic on HTTP/1.x closes the connection,
+		// on HTTP/2 it sends RST_STREAM,
+		// so the client knows the stream ended prematurely
+		panic(http.ErrAbortHandler)
+	}
+	log.Printf("<response>%s</response>\n", tokensAccumulated)
+}
+
 type PredictHandler struct {
 	Predictor predictor.Predictor
 }
@@ -39,46 +82,7 @@ func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		prompt := r.Form.Get("prompt") 
-		log.Printf("<prompt>%s</prompt>\n", prompt)
-		var tokensAccumulated string
-		opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
-			tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
-			_, err := io.WriteString(w, token)
-			if err != nil {
-				return false
-			}
-			return true
-		})}
-		temperatureStr := r.Form.Get("temperature")
-		if temperatureStr != "" {
-			temperature, err := strconv.ParseFloat(temperatureStr, 32)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(w, "failed to parse value 'temperature' %s: %s", temperatureStr, err)
-				return
-			}
-			opts = append(opts, llama.SetTemperature(float32(temperature)))
-			log.Printf("<temperature>%v</temperature>\n", temperature)
-		}
-		locked := predictMutex.TryLock()
-		if !locked {
-			// another request is performing prediction
-			// reject this request with HTTP 503
-			log.Printf("sending HTTP error: %v. Server is busy", http.StatusText(http.StatusServiceUnavailable))
-			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, "server is busy")
-			return
-		}
-		defer predictMutex.Unlock()
-		_, err = h.Predictor.Predict(prompt, opts...)
-		if err != nil {
-			log.Printf("predictor.Predict() failed: %s\n", err)
-			// panic on HTTP/1.x closes the connection,
-			// on HTTP/2 it sends RST_STREAM,
-			// so the client knows the stream ended prematurely
-			panic(http.ErrAbortHandler)
-		}
-		log.Printf("<response>%s</response>\n", tokensAccumulated)
+		handlePrediction(w, r, h.Predictor, prompt)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -130,53 +134,13 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			prompt += replyPrefix
 		}
-		log.Printf("<prompt>%s</prompt>\n", prompt)
-		var tokensAccumulated string
-		opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
-			tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
-			_, err := io.WriteString(w, token)
-			if err != nil {
-				return false
-			}
-			return true
-		})}
-		temperatureStr := r.Form.Get("temperature")
-		if temperatureStr != "" {
-			temperature, err := strconv.ParseFloat(temperatureStr, 32)
-			if err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintf(w, "failed to parse value 'temperature' %s: %s", temperatureStr, err)
-				return
-			}
-			opts = append(opts, llama.SetTemperature(float32(temperature)))
-			log.Printf("<temperature>%v</temperature>\n", temperature)
-		}
-		locked := predictMutex.TryLock()
-		if !locked {
-			// another request is performing prediction
-			// reject this request with HTTP 503
-			log.Printf("sending HTTP error: %v. Server is busy", http.StatusText(http.StatusServiceUnavailable))
-			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprintf(w, "server is busy")
-			return
-		}
-		defer predictMutex.Unlock()
-		_, err = h.Predictor.Predict(prompt, opts...)
-		if err != nil {
-			log.Printf("predictor.Predict() failed: %s\n", err)
-			// panic on HTTP/1.x closes the connection,
-			// on HTTP/2 it sends RST_STREAM,
-			// so the client knows the stream ended prematurely
-			panic(http.ErrAbortHandler)
-		}
-		log.Printf("<response>%s</response>\n", tokensAccumulated)
+		handlePrediction(w, r, h.Predictor, prompt)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		fmt.Fprintf(w, "only GET and POST methods supported")
 		return
 	}
-	
 }
 
 type ModelConfig struct {
