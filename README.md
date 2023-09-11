@@ -16,7 +16,17 @@ Requests are in `x-www-form-urlencoded`, responses in plain text.
 
 Submit a prompt to this endpoint and receive the response in plain text.
 
-Request:
+##### Query Parameters
+
+- `prompt` (required)
+- `temperature` (optional)
+
+##### Returns
+
+The response in plain text
+
+##### Example Request
+
 ```sh
 curl -X POST "http://localhost:8080/predict" -d "prompt=[INST] <<SYS>>
 You are a helpful, respectful and honest assistant.
@@ -29,15 +39,25 @@ Hello! [/INST]"
 
 Submit a conversation to this endpoint and receive the response in plain text.
 
-The first message of the conversation should belong to the user, the second to the assistant, etc.
-The last message should belong to the user.
-
 The difference from `/predict` is that the client doesn't need to know how to generate the prompt.
 The server generates the prompt from the messages the client submits according to the prompt template.
 
 This endpoint is activated, if you set the prompt template by using one of the flags: `-prompt-tempate` `-prompt-tempate-type` `-prompt-tempate-file`
 
-Request:
+##### Query Parameters
+
+- `messages` (required) The messages of the conversation.
+Use it multiple times if you have multiple messages in the conversation.
+The first message of the conversation should belong to the user, the second to the assistant, etc.
+The last message should belong to the user.
+- `temperature` (optional)
+
+##### Returns
+
+The response in plain text
+
+##### Example Request
+
 ```sh
 curl -X POST "http://localhost:8080/chat" -d "messages=Hello" -d "messages=Hello! How can I help you?" -d "messages=Who are you?"
 ```
