@@ -81,7 +81,7 @@ func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		prompt := r.Form.Get("prompt") 
+		prompt := r.Form.Get("prompt")
 		handlePrediction(w, r, h.Predictor, prompt)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
@@ -92,9 +92,9 @@ func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type ChatHandler struct {
-	Predictor predictor.Predictor
+	Predictor      predictor.Predictor
 	PromptTemplate conversation.PromptTemplate
-	SystemPrompt string
+	SystemPrompt   string
 }
 
 func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -108,14 +108,14 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		systemPrompt := h.SystemPrompt
-		systemPromptGiven := r.Form.Get("system") 
+		systemPromptGiven := r.Form.Get("system")
 		if systemPromptGiven != "" {
 			systemPrompt = systemPromptGiven
 		}
 		conv := conversation.NewConversation(systemPrompt)
 		messages := r.Form["messages"]
 		for i, message := range messages {
-			if i % 2 == 0 {
+			if i%2 == 0 {
 				conv.AddMessageUser(message)
 			} else {
 				conv.AddMessageAssistant(message)
@@ -144,11 +144,11 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type ModelConfig struct {
-	GpuLayers              int    `json:"gpuLayers"`
-	ContextSize            int    `json:"context"`
-	PromptTemplate         string `json:"promptTemplate"`
-	PromptTemplateType     string `json:"promptTemplateType"`
-	PromptTemplateFilePath string `json:"promptTemplateFile"`
+	GpuLayers              int     `json:"gpuLayers"`
+	ContextSize            int     `json:"context"`
+	PromptTemplate         string  `json:"promptTemplate"`
+	PromptTemplateType     string  `json:"promptTemplateType"`
+	PromptTemplateFilePath string  `json:"promptTemplateFile"`
 	RopeFreqBase           float64 `json:"ropeFreqBase"`
 	RopeFreqScale          float64 `json:"ropeFreqScale"`
 }
@@ -350,9 +350,9 @@ func main2() error {
 	mux.Handle("/predict", PredictHandler{Predictor: predictor})
 	if promptTemplate.Template != nil {
 		mux.Handle("/chat", ChatHandler{
-			Predictor: predictor,
+			Predictor:      predictor,
 			PromptTemplate: promptTemplate,
-			SystemPrompt: systemPrompt,
+			SystemPrompt:   systemPrompt,
 		})
 	} else {
 		log.Println("`/chat` endpoint is not working because prompt template is not set")
