@@ -19,6 +19,7 @@ Submit a prompt to this endpoint and receive the response in plain text.
 ##### Query Parameters
 
 - `prompt` (required)
+- `stopRegex` (optional, experimental) regular expression that will stop prediction, if a match is found
 - `temperature` (optional)
 
 ##### Returns
@@ -50,6 +51,7 @@ This endpoint is activated, if you set the prompt template by using one of the f
 Use it multiple times if you have multiple messages in the conversation.
 The first message of the conversation should belong to the user, the second to the assistant, etc.
 The last message should belong to the user.
+- `stopRegex` (optional, experimental) regular expression that will stop prediction, if a match is found
 - `temperature` (optional)
 
 ##### Returns
@@ -134,6 +136,8 @@ By default the HTTP server listens on `localhost:8080`. You can change this with
         RoPE base frequency (default 10000 unless specified in the GGUF file)
   -rope-freq-scale float
         RoPE frequency scaling factor (default 1 unless specified in the GGUF file)
+  -stop-regex value
+        regular expression that will stop prediction, if a match is found (experimental)
   -system-prompt string
         system prompt
   -system-prompt-file string

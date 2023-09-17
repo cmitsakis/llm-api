@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -24,10 +25,25 @@ import (
 
 var predictMutex sync.Mutex
 
-func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predictor, prompt string) {
+func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predictor, prompt string, stopRegex *regexp.Regexp) {
 	log.Printf("<prompt>%s</prompt>\n", prompt)
+	stopRegexSubmittedStr := r.Form.Get("stopRegex")
+	var stopRegexSubmitted *regexp.Regexp
+	if stopRegexSubmittedStr != "" {
+		log.Printf("<stopRegex>%s</stopRegex>\n", stopRegexSubmittedStr)
+		var err error
+		stopRegexSubmitted, err = regexp.Compile(stopRegexSubmittedStr)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, "failed to parse stopRegex: %s", err)
+			return
+		}
+	}
 	var tokensAccumulated string
 	opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
+		if stopRegex != nil && stopRegex.MatchString(token) || stopRegexSubmitted != nil && stopRegexSubmitted.MatchString(token) {
+			return false
+		}
 		tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
 		_, err := io.WriteString(w, token)
 		if err != nil {
@@ -69,6 +85,7 @@ func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predic
 
 type PredictHandler struct {
 	Predictor predictor.Predictor
+	StopRegex *regexp.Regexp
 }
 
 func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +99,7 @@ func (h PredictHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		prompt := r.Form.Get("prompt")
-		handlePrediction(w, r, h.Predictor, prompt)
+		handlePrediction(w, r, h.Predictor, prompt, h.StopRegex)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -95,6 +112,7 @@ type ChatHandler struct {
 	Predictor      predictor.Predictor
 	PromptTemplate conversation.PromptTemplate
 	SystemPrompt   string
+	StopRegex      *regexp.Regexp
 }
 
 func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +152,7 @@ func (h ChatHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			}
 			prompt += replyPrefix
 		}
-		handlePrediction(w, r, h.Predictor, prompt)
+		handlePrediction(w, r, h.Predictor, prompt, h.StopRegex)
 	default:
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -158,6 +176,7 @@ type PredictConfig struct {
 	Tokens               int
 	SystemPrompt         string
 	SystemPromptFilePath string
+	StopRegex            string
 	NKeep                int
 	TopK                 int
 	TopP                 float64
@@ -196,6 +215,7 @@ func main2() error {
 
 	// Predict options
 	flag.IntVar(&config.Predict.NKeep, "n-keep", 0, "number of tokens to keep from initial prompt (0 = disabled)")
+	flag.StringVar(&config.Predict.StopRegex, "stop-regex", "", "regular expression that will stop prediction, if a match is found (experimental)")
 	flag.StringVar(&config.Predict.SystemPrompt, "system-prompt", "", "system prompt")
 	flag.StringVar(&config.Predict.SystemPromptFilePath, "system-prompt-file", "", "read the system prompt from this file")
 	flag.IntVar(&config.Predict.Threads, "threads", runtime.NumCPU(), "number of threads")
@@ -245,6 +265,15 @@ func main2() error {
 		modelConfigFile.Close()
 		// parse flags again because command line options have priority over config file
 		flag.Parse()
+	}
+
+	var stopRegex *regexp.Regexp
+	if config.Predict.StopRegex != "" {
+		var err error
+		stopRegex, err = regexp.Compile(config.Predict.StopRegex)
+		if err != nil {
+			return fmt.Errorf("failed to parse regex of flag -stop-regex: %s", err)
+		}
 	}
 
 	// set systemPrompt
@@ -350,12 +379,16 @@ func main2() error {
 	defer predictor.Free()
 
 	mux := http.NewServeMux()
-	mux.Handle("/predict", PredictHandler{Predictor: predictor})
+	mux.Handle("/predict", PredictHandler{
+		Predictor: predictor,
+		StopRegex: stopRegex,
+	})
 	if promptTemplate.Template != nil {
 		mux.Handle("/chat", ChatHandler{
 			Predictor:      predictor,
 			PromptTemplate: promptTemplate,
 			SystemPrompt:   systemPrompt,
+			StopRegex:      stopRegex,
 		})
 	} else {
 		log.Println("`/chat` endpoint is not working because prompt template is not set")
