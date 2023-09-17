@@ -306,6 +306,9 @@ func main2() error {
 		}
 	}
 
+	configJSON, _ := json.MarshalIndent(config, "", "  ")
+	fmt.Println(string(configJSON))
+
 	// fail if system prompt is not set and it is required
 	if systemPrompt == "" && promptTemplate.RequiresSystemPrompt {
 		return errors.New("system prompt not set but the prompt template requires one")
