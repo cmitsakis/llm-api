@@ -41,10 +41,10 @@ func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predic
 	}
 	var tokensAccumulated string
 	opts := []llama.PredictOption{llama.SetTokenCallback(func(token string) bool {
-		if stopRegex != nil && stopRegex.MatchString(token) || stopRegexSubmitted != nil && stopRegexSubmitted.MatchString(token) {
+		tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
+		if stopRegex != nil && stopRegex.MatchString(tokensAccumulated) || stopRegexSubmitted != nil && stopRegexSubmitted.MatchString(tokensAccumulated) {
 			return false
 		}
-		tokensAccumulated, token = conversation.TrimAndAppend(tokensAccumulated, token)
 		_, err := io.WriteString(w, token)
 		if err != nil {
 			return false
@@ -72,7 +72,7 @@ func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predic
 		return
 	}
 	defer predictMutex.Unlock()
-	_, err := p.Predict(prompt, opts...)
+	response, err := p.Predict(prompt, opts...)
 	if err != nil {
 		log.Printf("p.Predict() failed: %s\n", err)
 		// panic on HTTP/1.x closes the connection,
@@ -80,7 +80,7 @@ func handlePrediction(w http.ResponseWriter, r *http.Request, p predictor.Predic
 		// so the client knows the stream ended prematurely
 		panic(http.ErrAbortHandler)
 	}
-	log.Printf("<response>%s</response>\n", tokensAccumulated)
+	log.Printf("<response>%s</response>\n", response)
 }
 
 type PredictHandler struct {
