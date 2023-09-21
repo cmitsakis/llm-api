@@ -181,6 +181,7 @@ type PredictConfig struct {
 	TopK                 int
 	TopP                 float64
 	Temperature          float64
+	TailFreeSamplingZ    float64
 	RepetitionPenalty    float64
 	FrequencyPenalty     float64
 	PresencePenalty      float64
@@ -225,6 +226,7 @@ func main2() error {
 	flag.IntVar(&config.Predict.TopK, "top-k", 40, "top-k")
 	flag.Float64Var(&config.Predict.TopP, "top-p", 0.2, "top-p (1 = disabled)")
 	flag.Float64Var(&config.Predict.Temperature, "temperature", 0.8, "temperature")
+	flag.Float64Var(&config.Predict.TailFreeSamplingZ, "tail-free-sampling-z", 1, "tail free sampling parameter z (1 = disabled)")
 	flag.Float64Var(&config.Predict.FrequencyPenalty, "penalty-frequency", 0.1, "frequency penalty (0 = disabled)")
 	flag.Float64Var(&config.Predict.PresencePenalty, "penalty-presence", 0, "presense penalty (0 = disabled)")
 	flag.Float64Var(&config.Predict.RepetitionPenalty, "penalty-repetition", 1.1, "repetition penalty (1 = disabled)")
@@ -364,6 +366,7 @@ func main2() error {
 			llama.SetTopK(config.Predict.TopK),
 			llama.SetTopP(float32(config.Predict.TopP)),
 			llama.SetTemperature(float32(config.Predict.Temperature)),
+			llama.SetTailFreeSamplingZ(float32(config.Predict.TailFreeSamplingZ)),
 			llama.SetPenalty(float32(config.Predict.RepetitionPenalty)),
 			llama.SetFrequencyPenalty(float32(config.Predict.FrequencyPenalty)),
 			llama.SetPresencePenalty(float32(config.Predict.PresencePenalty)),

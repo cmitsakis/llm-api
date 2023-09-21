@@ -142,6 +142,8 @@ By default the HTTP server listens on `localhost:8080`. You can change this with
         system prompt
   -system-prompt-file string
         read the system prompt from this file
+  -tail-free-sampling-z float
+        tail free sampling parameter z (1 = disabled) (default 1)
   -temperature float
         temperature (default 0.8)
   -threads int
